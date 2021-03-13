@@ -1,6 +1,6 @@
 const __PlayerSize = 8;
-const __InitPlayerPosX = 60;
-const __InitPlayerPosY = 50;
+const __InitPlayerPosX = 320;
+const __InitPlayerPosY = 360;
 const __InitPlayerVelX = 0;
 const __InitPlayerVelY = 0;
 let __RGBA_BackGround;
@@ -594,149 +594,143 @@ function draw() {
         let viewRect = new myLine(new myVec(0, 8), new myVec(width, 224));
 
         let centerAngle = __Game.player.angle;
-        let leftAngle = centerAngle - PI * 0.4;
-        let rightAngle = centerAngle + PI* 0.4;
-        let beamTotal = 30;//視線数
+        let leftAngle = centerAngle - PI * 0.2;
+        let rightAngle = centerAngle + PI* 0.2;
+        let beamTotal = 64;//視線数
         let beamLen = 150;//視線の長さ
         let beamIndex = -1;
-        for(let angle = leftAngle; angle < rightAngle + 0.01; angle += PI * 0.8 / beamTotal) {
+        for(let angle = leftAngle; angle < rightAngle + 0.01; angle += PI * 0.4 / beamTotal) {
             beamIndex++;
             let beam = new myLine(__Game.player.pos.copy(), new myVec(cos(angle), sin(angle)).mul(beamLen));
-
             let allHitBeamWays = __Game.map.myLines.map(wall => beam.intersectionLine(wall)).filter(pos => pos !== null).map(pos => pos.sub(beam.begin));
-            if (allHitBeamWays.length === 0) {
-                //背景描画
 
-                //
-                stroke(__RGBA_EYE);
-                strokeWeight(1);
-                beam.draw();
-                strokeWeight(0);
-                continue;
-            }
-            let hitBeam = allHitBeamWays.reduce((a, b) => a.mag() < b.mag() ? a : b);
-            
-            let wallDist = hitBeam.mag();
-            let wallPerpDist = wallDist * cos(angle - centerAngle);
-            let lineHeight = constrain(240 * ((abs(beamLen - wallPerpDist) ** 8) / (beamLen ** 8)), 0, 224);
-            let lineBegin = viewRect.begin.add(new myVec(viewRect.len.x/beamTotal*beamIndex, viewRect.len.y/2-lineHeight/2));
-            
-            
-            
+            let hitBeam;
+
             //背景描画
-            let sx;
-            let gx;
-            let sy;
-            let gy;
-            sx = __Game.player.pos.x;
-            gx = __Game.player.pos.add(hitBeam).x;
-            sy = __Game.player.pos.y;
-            gy = __Game.player.pos.add(hitBeam).y;
-            let spx;
-            let spy;
-            if(abs(gx - sx) < abs(gy - sy)){
-                spx = (gx - sx) / abs(gy - sy);
-                if(abs(spx) < 0.001 && spx < 0) {
-                    spx = -0.01;
+            let bgSX;
+            let bgGX;
+            let bgSY;
+            let bgGY;
+
+            if (allHitBeamWays.length === 0) {
+                bgSX = __Game.player.pos.x;
+                bgSY = __Game.player.pos.y;
+                bgGX = beam.end.x;
+                bgGY = beam.end.y;
+            }
+            else{
+                hitBeam = allHitBeamWays.reduce((a, b) => a.mag() < b.mag() ? a : b);//壁に当たる視線
+
+                bgSX = __Game.player.pos.x;
+                bgSY = __Game.player.pos.y;
+                bgGX = __Game.player.pos.add(hitBeam).x;
+                bgGY = __Game.player.pos.add(hitBeam).y;
+            }
+
+            let bgSPX;
+            let bgSPY;
+            if(abs(bgGX - bgSX) < abs(bgGY - bgSY)){
+                bgSPX = (bgGX - bgSX) / abs(bgGY - bgSY);
+                if(abs(bgSPX) < 0.001 && bgSPX < 0) {
+                    bgSPX = -0.01;
                 }
-                else if(abs(spx) < 0.001 && spx > 0) {
-                    spx = 0.01;
+                else if(abs(bgSPX) < 0.001 && bgSPX > 0) {
+                    bgSPX = 0.01;
                 }
 
-                if(gy - sy < 0) {
-                    spy = -1;
+                if(bgGY - bgSY < 0) {
+                    bgSPY = -1;
                 }
-                else if(gy - sy > 0){
-                    spy = 1;
+                else if(bgGY - bgSY > 0){
+                    bgSPY = 1;
                 }
                 else {
-                    spy = 0;
+                    bgSPY = 0;
                 }
             }
             else{
-                if(gx - sx < 0) {
-                    spx = -1;
+                if(bgGX - bgSX < 0) {
+                    bgSPX = -1;
                 }
-                else if(gx - sx > 0){
-                    spx = 1;
+                else if(bgGX - bgSX > 0){
+                    bgSPX = 1;
                 }
                 else {
-                    spx = 0;
+                    bgSPX = 0;
                 }
 
-                spy = (gy - sy) / abs(gx - sx);
-                if (abs(spy) < 0.001 && spy < 0) {
-                    spy = -0.01;
+                bgSPY = (bgGY - bgSY) / abs(bgGX - bgSX);
+                if (abs(bgSPY) < 0.001 && bgSPY < 0) {
+                    bgSPY = -0.01;
                 }
-                else if(abs(spy) < 0.001 && spy > 0) {
-                    spy = 0.01;
+                else if(abs(bgSPY) < 0.001 && bgSPY > 0) {
+                    bgSPY = 0.01;
                 }
 
             }
 
-            if(spx != Infinity && spy != Infinity && (sx != gx && sy != gy)) {
+            if(bgSPX != Infinity && bgSPY != Infinity && (bgSX != bgGX && bgSY != bgGY)) {
                 while(true) {
-                    if(__Game.map.mapStringAtCoord(sx, sy) === "." || __Game.map.mapStringAtCoord(sx, sy) === "_" || __Game.map.mapStringAtCoord(sx, sy) === "+") {
-                        if(__Game.map.mapStringAtCoord(sx, sy) === ".") {
+                    if(__Game.map.mapStringAtCoord(bgSX, bgSY) === "." || __Game.map.mapStringAtCoord(bgSX, bgSY) === "_" || __Game.map.mapStringAtCoord(bgSX, bgSY) === "+") {
+                        if(__Game.map.mapStringAtCoord(bgSX, bgSY) === ".") {
                             fill(0);
                         }
                         else{
                             fill(200);
                         }
-                        rect(sx, sy, 1, 1);
+                        //rect(bgSX, bgSY, 1, 1);
 
                         //距離を取得
-                        let p1 = new myVec(sx, sy).sub(__Game.player.pos);
+                        let p1 = new myVec(bgSX, bgSY).sub(__Game.player.pos);
                         let wallDist1 = p1.mag();
                         let wallPerpDist1 = wallDist1 * cos(angle - centerAngle);
                         let lineHeight1 = constrain(240 * ((abs(beamLen - wallPerpDist1) ** 8) / (beamLen ** 8)), 0, 112);
                         let lineBegin1 = viewRect.begin.add(new myVec(viewRect.len.x/beamTotal*beamIndex,112));
-                        rect(lineBegin1.x, lineBegin1.y, ceil(width/beamTotal), lineHeight1);
+                        rect(lineBegin1.x, lineBegin1.y, ceil(width/beamTotal), lineHeight1);//背景の描画
                     }
-                    sy += spy;
-                    sx += spx;
-                    if((spx > 0 && spy > 0 && sx >= gx && sy >= gy) ||
-                        (spx > 0 && spy < 0 && sx >= gx && sy <= gy) ||
-                        (spx < 0 && spy < 0 && sx <= gx && sy <= gy) ||
-                        (spx < 0 && spy > 0 && sx <= gx && sy >= gy) ||
-                        (spx === 0 && spy > 0 && sy >= gy) ||
-                        (spx === 0 && spy < 0 && sy <= gy) ||
-                        (spy === 0 && spx > 0 && sx >= gx) ||
-                        (spy === 0 && spx < 0 && sx <= gx) ||
-                        (spx === 0 && spy === 0)) {
+                    bgSY += bgSPY;
+                    bgSX += bgSPX;
+                    if((bgSPX > 0 && bgSPY > 0 && bgSX >= bgGX && bgSY >= bgGY) ||
+                        (bgSPX > 0 && bgSPY < 0 && bgSX >= bgGX && bgSY <= bgGY) ||
+                        (bgSPX < 0 && bgSPY < 0 && bgSX <= bgGX && bgSY <= bgGY) ||
+                        (bgSPX < 0 && bgSPY > 0 && bgSX <= bgGX && bgSY >= bgGY) ||
+                        (bgSPX === 0 && bgSPY > 0 && bgSY >= bgGY) ||
+                        (bgSPX === 0 && bgSPY < 0 && bgSY <= bgGY) ||
+                        (bgSPY === 0 && bgSPX > 0 && bgSX >= bgGX) ||
+                        (bgSPY === 0 && bgSPX < 0 && bgSX <= bgGX) ||
+                        (bgSPX === 0 && bgSPY === 0)) {
                         break;
                     }
                 }
             }
             //
 
-
-            
-            
-            
-            
-            
-            
-            
-            
-            fill(__RGBA_WALL);
-            rect(lineBegin.x, lineBegin.y, ceil(width/beamTotal), lineHeight);
-
-            //長さによって暗くする
-            let cr = (255 - 255 * (abs(beamLen - wallPerpDist) / beamLen));
-            fill(color(0, 0, 0, cr));
-            rect(lineBegin.x, lineBegin.y, ceil(width/beamTotal), lineHeight);
-
-            //壁に当たっている視線を描画
-            stroke(255);
-            strokeWeight(1);
-            let beamHit = 
-            line(__Game.player.pos.x, __Game.player.pos.y, __Game.player.pos.add(hitBeam).x, __Game.player.pos.add(hitBeam).y);
-            strokeWeight(0);
-
-
-
-
+            //壁の描画
+            if (allHitBeamWays.length === 0) {
+                stroke(__RGBA_EYE);
+                strokeWeight(1);
+                beam.draw();
+                strokeWeight(0);
+            }
+            else{
+                let wallPerpDist = hitBeam.mag() * cos(angle - centerAngle);
+                let lineHeight = constrain(240 * ((abs(beamLen - wallPerpDist) ** 8) / (beamLen ** 8)), 0, 224);
+                let lineBegin = viewRect.begin.add(new myVec(viewRect.len.x/beamTotal*beamIndex, viewRect.len.y/2-lineHeight/2));
+                
+                fill(__RGBA_WALL);
+                rect(lineBegin.x, lineBegin.y, ceil(width/beamTotal), lineHeight);
+    
+                //長さによって暗くする
+                let cr = (255 - 255 * (abs(beamLen - wallPerpDist) / beamLen));
+                fill(color(0, 0, 0, cr));
+                rect(lineBegin.x, lineBegin.y, ceil(width/beamTotal), lineHeight);
+    
+                //壁に当たっている視線を描画
+                stroke(255);
+                strokeWeight(1);
+                line(__Game.player.pos.x, __Game.player.pos.y, __Game.player.pos.add(hitBeam).x, __Game.player.pos.add(hitBeam).y);
+                strokeWeight(0);
+            }
 
             //
         }
@@ -752,12 +746,14 @@ function draw() {
     rect(0, 0, width, 8);//上部余白8
     rect(0, 232, width, 16);//真ん中余白16
     rect(0, 472, width, 8);//下部余白8
-
+    //rect(0, 0, 1, height);//左
+    //rect(width - 1, 0, 1, height);//右
+    
     //テスト
     // for(let x = 0; x<= 100000; x++) {
 
     // }
 
     //処理速度
-    text(new Date().getTime() - time, 50, 200);
+    text(new Date().getTime() - time, 625, 470);
 }
